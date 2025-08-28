@@ -1,0 +1,41 @@
+name: presensi
+description: "A new Flutter project for mockup presence apps"
+
+publish_to: 'none' # Remove this line if you wish to publish to pub.dev
+
+version: 1.0.0+1
+
+environment:
+  sdk: '>=3.0.0 <4.0.0'
+
+
+dependencies:
+  flutter:
+    sdk: flutter
+  # Face Recognition & ML
+  google_mlkit_face_detection: ^0.10.0
+  tflite_flutter: ^0.11.0
+
+  # Camera
+  camera: ^0.10.5+9
+  image: ^4.0.17
+
+  # Storage
+  hive: ^2.2.3
+  hive_flutter: ^1.1.0
+  path_provider: ^2.1.1
+
+  # UI
+  cupertino_icons: ^1.0.2
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  flutter_lints: ^2.0.0
+  hive_generator: ^2.0.1
+  build_runner: ^2.4.7
+
+flutter:
+  uses-material-design: true
+  assets:
+    - lib/assets/models/output_model.tflite
