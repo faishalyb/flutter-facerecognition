@@ -24,7 +24,7 @@ class FaceRecognitionService {
 
   Future<void> loadModel() async {
     try {
-      interpreter = await Interpreter.fromAsset('lib/assets/models/output_model.tflite');
+      interpreter = await Interpreter.fromAsset('lib/assets/models/mobile_face_net.tflite');
       print('Model loaded successfully');
     } catch (e) {
       print('Error loading model: $e');
@@ -52,7 +52,7 @@ class FaceRecognitionService {
       final input = _preprocessImage(croppedFace);
 
       // Output model (512 dimensional embedding)
-      final output = List.filled(512, 0.0).reshape([1, 512]);
+      final output = List.filled(192, 0.0).reshape([1, 192]);
 
       // Run inference
       interpreter.run(input, output);

@@ -1,17 +1,26 @@
+import 'dart:io';
+
 import 'package:flutter/material.dart';
 import 'package:camera/camera.dart';
 import 'package:hive/hive.dart';
+import 'package:image_picker/image_picker.dart';
+import 'package:path_provider/path_provider.dart';
 import '../models/user_model.dart';
 import '../main.dart';
 import 'camera_screen.dart';
 
+
+
 class RegistrationScreen extends StatefulWidget {
+  const RegistrationScreen({super.key});
+
   @override
   _RegistrationScreenState createState() => _RegistrationScreenState();
 }
 
 class _RegistrationScreenState extends State<RegistrationScreen> {
   final TextEditingController _nameController = TextEditingController();
+  final ImagePicker _picker = ImagePicker();
   List<String> capturedImages = [];
   List<String> imageLabels = ['Foto Depan', 'Foto Kiri', 'Foto Kanan'];
   bool isProcessing = false;
@@ -20,11 +29,11 @@ class _RegistrationScreenState extends State<RegistrationScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: Text('Registrasi Pengguna'),
+        title: const Text('Registrasi Pengguna'),
         centerTitle: true,
       ),
       body: SingleChildScrollView(
-        padding: EdgeInsets.all(16.0),
+        padding: const EdgeInsets.all(16.0),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
@@ -32,11 +41,11 @@ class _RegistrationScreenState extends State<RegistrationScreen> {
             Card(
               color: Colors.blue[50],
               child: Padding(
-                padding: EdgeInsets.all(16),
+                padding: const EdgeInsets.all(16),
                 child: Column(
                   children: [
                     Icon(Icons.info_outline, color: Colors.blue[600], size: 32),
-                    SizedBox(height: 8),
+                    const SizedBox(height: 8),
                     Text(
                       'Petunjuk Registrasi',
                       style: TextStyle(
@@ -45,7 +54,7 @@ class _RegistrationScreenState extends State<RegistrationScreen> {
                         color: Colors.blue[800],
                       ),
                     ),
-                    SizedBox(height: 8),
+                    const SizedBox(height: 8),
                     Text(
                       '1. Masukkan nama lengkap\n2. Ambil 3 foto: depan, kiri, kanan\n3. Pastikan wajah terlihat jelas\n4. Simpan untuk menyelesaikan registrasi',
                       textAlign: TextAlign.center,
@@ -56,14 +65,14 @@ class _RegistrationScreenState extends State<RegistrationScreen> {
               ),
             ),
 
-            SizedBox(height: 24),
+            const SizedBox(height: 24),
 
             // Input Nama
             TextField(
               controller: _nameController,
               decoration: InputDecoration(
                 labelText: 'Nama Lengkap',
-                prefixIcon: Icon(Icons.person),
+                prefixIcon: const Icon(Icons.person),
                 border: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(8),
                 ),
@@ -73,18 +82,18 @@ class _RegistrationScreenState extends State<RegistrationScreen> {
               textCapitalization: TextCapitalization.words,
             ),
 
-            SizedBox(height: 24),
+            const SizedBox(height: 24),
 
             // Photo Capture Section
             Text(
               'Ambil Foto Wajah (${capturedImages.length}/3)',
-              style: TextStyle(
+              style: const TextStyle(
                 fontSize: 18,
                 fontWeight: FontWeight.bold,
               ),
             ),
 
-            SizedBox(height: 16),
+            const SizedBox(height: 16),
 
             // Photo Progress
             Row(
@@ -102,7 +111,7 @@ class _RegistrationScreenState extends State<RegistrationScreen> {
                         size: 30,
                       ),
                     ),
-                    SizedBox(height: 8),
+                    const SizedBox(height: 8),
                     Text(
                       imageLabels[index],
                       style: TextStyle(
@@ -120,15 +129,15 @@ class _RegistrationScreenState extends State<RegistrationScreen> {
 
             // Captured Images Preview
             if (capturedImages.isNotEmpty) ...[
-              Text(
+              const Text(
                 'Foto yang Sudah Diambil:',
                 style: TextStyle(
                   fontSize: 16,
                   fontWeight: FontWeight.w600,
                 ),
               ),
-              SizedBox(height: 12),
-              Container(
+              const SizedBox(height: 12),
+              SizedBox(
                 height: 100,
                 child: ListView.builder(
                   scrollDirection: Axis.horizontal,
@@ -142,8 +151,8 @@ class _RegistrationScreenState extends State<RegistrationScreen> {
                           Expanded(
                             child: ClipRRect(
                               borderRadius: BorderRadius.circular(8),
-                              child: Image.asset(
-                                capturedImages[index],
+                              child: Image.file(
+                                File(capturedImages[index]),
                                 fit: BoxFit.cover,
                                 errorBuilder: (context, error, stackTrace) {
                                   return Container(
@@ -154,10 +163,10 @@ class _RegistrationScreenState extends State<RegistrationScreen> {
                               ),
                             ),
                           ),
-                          SizedBox(height: 4),
+                          const SizedBox(height: 4),
                           Text(
                             imageLabels[index],
-                            style: TextStyle(fontSize: 10),
+                            style: const TextStyle(fontSize: 10),
                             textAlign: TextAlign.center,
                           ),
                         ],
@@ -166,21 +175,21 @@ class _RegistrationScreenState extends State<RegistrationScreen> {
                   },
                 ),
               ),
-              SizedBox(height: 24),
+              const SizedBox(height: 24),
             ],
 
             // Action Buttons
             if (capturedImages.length < 3)
               ElevatedButton.icon(
-                onPressed: _takePhoto,
-                icon: Icon(Icons.camera_alt),
+                onPressed: _showImageSourceDialog,
+                icon: const Icon(Icons.add_a_photo),
                 label: Text(
-                  'Ambil ${imageLabels[capturedImages.length]}',
-                  style: TextStyle(fontSize: 16),
+                  'Tambah ${imageLabels[capturedImages.length]}',
+                  style: const TextStyle(fontSize: 16),
                 ),
                 style: ElevatedButton.styleFrom(
-                  backgroundColor: Colors.blue[600],
-                  padding: EdgeInsets.symmetric(vertical: 16),
+                  backgroundColor: Colors.purple[600],
+                  padding: const EdgeInsets.symmetric(vertical: 16),
                 ),
               )
             else
@@ -190,25 +199,25 @@ class _RegistrationScreenState extends State<RegistrationScreen> {
                   ElevatedButton.icon(
                     onPressed: isProcessing ? null : _saveRegistration,
                     icon: isProcessing
-                        ? SizedBox(
+                        ? const SizedBox(
                       width: 20,
                       height: 20,
                       child: CircularProgressIndicator(strokeWidth: 2),
                     )
-                        : Icon(Icons.save),
+                        : const Icon(Icons.save),
                     label: Text(
                       isProcessing ? 'Menyimpan...' : 'SIMPAN REGISTRASI',
-                      style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+                      style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
                     ),
                     style: ElevatedButton.styleFrom(
                       backgroundColor: Colors.green[600],
-                      padding: EdgeInsets.symmetric(vertical: 16),
+                      padding: const EdgeInsets.symmetric(vertical: 16),
                     ),
                   ),
-                  SizedBox(height: 12),
+                  const SizedBox(height: 12),
                   TextButton(
                     onPressed: isProcessing ? null : _resetCapture,
-                    child: Text('Ambil Ulang Semua Foto'),
+                    child: const Text('Ambil Ulang Semua Foto'),
                   ),
                 ],
               ),
@@ -221,7 +230,7 @@ class _RegistrationScreenState extends State<RegistrationScreen> {
   void _takePhoto() async {
     if (cameras.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Kamera tidak tersedia')),
+        const SnackBar(content: Text('Kamera tidak tersedia')),
       );
       return;
     }
@@ -242,6 +251,151 @@ class _RegistrationScreenState extends State<RegistrationScreen> {
     }
   }
 
+  Future<void> _pickFromGallery() async {
+    try {
+      final XFile? image = await _picker.pickImage(
+        source: ImageSource.gallery,
+        maxWidth: 800,
+        maxHeight: 800,
+        imageQuality: 80,
+      );
+
+      if (image != null) {
+        // Copy image to app directory
+        final appDir = await getApplicationDocumentsDirectory();
+        final fileName = 'gallery_${DateTime.now().millisecondsSinceEpoch}.jpg';
+        final savedImage = await File(image.path).copy('${appDir.path}/$fileName');
+
+        setState(() {
+          capturedImages.add(savedImage.path);
+        });
+
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('${imageLabels[capturedImages.length - 1]} berhasil dipilih dari galeri'),
+            backgroundColor: Colors.green,
+          ),
+        );
+      }
+    } catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Error memilih foto dari galeri: ${e.toString()}'),
+          backgroundColor: Colors.red,
+        ),
+      );
+    }
+  }
+
+  void _showImageSourceDialog() {
+    showModalBottomSheet(
+      context: context,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      builder: (BuildContext context) {
+        return SafeArea(
+          child: Wrap(
+            children: [
+              Container(
+                padding: const EdgeInsets.all(20),
+                child: Column(
+                  children: [
+                    Container(
+                      width: 50,
+                      height: 5,
+                      decoration: BoxDecoration(
+                        color: Colors.grey[300],
+                        borderRadius: BorderRadius.circular(10),
+                      ),
+                    ),
+                    const SizedBox(height: 20),
+                    Text(
+                      'Pilih Sumber ${imageLabels[capturedImages.length]}',
+                      style: const TextStyle(
+                        fontSize: 18,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                    const SizedBox(height: 20),
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                      children: [
+                        GestureDetector(
+                          onTap: () {
+                            Navigator.pop(context);
+                            _takePhoto();
+                          },
+                          child: Container(
+                            padding: const EdgeInsets.all(20),
+                            decoration: BoxDecoration(
+                              color: Colors.blue[50],
+                              borderRadius: BorderRadius.circular(15),
+                              border: Border.all(color: Colors.blue[200]!),
+                            ),
+                            child: Column(
+                              children: [
+                                Icon(
+                                  Icons.camera_alt,
+                                  size: 40,
+                                  color: Colors.blue[600],
+                                ),
+                                const SizedBox(height: 8),
+                                Text(
+                                  'Kamera',
+                                  style: TextStyle(
+                                    fontWeight: FontWeight.w600,
+                                    color: Colors.blue[800],
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ),
+                        GestureDetector(
+                          onTap: () {
+                            Navigator.pop(context);
+                            _pickFromGallery();
+                          },
+                          child: Container(
+                            padding: const EdgeInsets.all(20),
+                            decoration: BoxDecoration(
+                              color: Colors.green[50],
+                              borderRadius: BorderRadius.circular(15),
+                              border: Border.all(color: Colors.green[200]!),
+                            ),
+                            child: Column(
+                              children: [
+                                Icon(
+                                  Icons.photo_library,
+                                  size: 40,
+                                  color: Colors.green[600],
+                                ),
+                                const SizedBox(height: 8),
+                                Text(
+                                  'Galeri',
+                                  style: TextStyle(
+                                    fontWeight: FontWeight.w600,
+                                    color: Colors.green[800],
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 10),
+                  ],
+                ),
+              ),
+            ],
+          ),
+        );
+      },
+    );
+  }
+
   void _resetCapture() {
     setState(() {
       capturedImages.clear();
@@ -251,14 +405,14 @@ class _RegistrationScreenState extends State<RegistrationScreen> {
   Future<void> _saveRegistration() async {
     if (_nameController.text.trim().isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Nama tidak boleh kosong')),
+        const SnackBar(content: Text('Nama tidak boleh kosong')),
       );
       return;
     }
 
     if (capturedImages.length != 3) {
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Semua foto harus diambil')),
+        const SnackBar(content: Text('Semua foto harus diambil')),
       );
       return;
     }
@@ -293,7 +447,7 @@ class _RegistrationScreenState extends State<RegistrationScreen> {
       Navigator.pop(context);
 
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
+        const SnackBar(
           content: Text('Registrasi berhasil!'),
           backgroundColor: Colors.green,
         ),

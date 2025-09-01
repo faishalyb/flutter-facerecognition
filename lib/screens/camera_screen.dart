@@ -102,13 +102,13 @@ class _CameraScreenState extends State<CameraScreen>
           // Instruction Card
           Container(
             width: double.infinity,
-            margin: EdgeInsets.all(16),
-            padding: EdgeInsets.all(16),
+            margin: const EdgeInsets.all(16),
+            padding: const EdgeInsets.all(16),
             decoration: BoxDecoration(
               color: Colors.blue[900]!.withOpacity(0.8),
               borderRadius: BorderRadius.circular(12),
             ),
-            child: Column(
+            child: const Column(
               children: [
                 Icon(Icons.face, color: Colors.white, size: 24),
                 SizedBox(height: 8),
@@ -234,7 +234,7 @@ class _CameraScreenState extends State<CameraScreen>
     if (!isInitialized || controller == null) {
       return Container(
         color: Colors.grey[900],
-        child: Center(
+        child: const Center(
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [

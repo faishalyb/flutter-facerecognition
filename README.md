@@ -4,11 +4,12 @@ Aplikasi absensi sederhana menggunakan Flutter dengan fitur face recognition ber
 
 ## Fitur
 
-- ✅ **Registrasi Pengguna**: Ambil 3 foto wajah (depan, kiri, kanan)
-- ✅ **Absensi Harian**: Face recognition untuk absensi
+- ✅ **Registrasi Pengguna**: Ambil 3 foto wajah (depan, kiri, kanan) dari kamera atau galeri
+- ✅ **Absensi Harian**: Face recognition untuk absensi dengan kamera atau galeri
 - ✅ **Penyimpanan Lokal**: Menggunakan Hive database
 - ✅ **Real-time Preview**: Kamera dengan panduan wajah
 - ✅ **Validasi Wajah**: Error handling jika wajah tidak ditemukan
+- ✅ **Multi Input**: Mendukung foto dari kamera dan galeri
 
 ## Struktur Project
 
@@ -98,10 +99,26 @@ Tambahkan ke `ios/Runner/Info.plist`:
 
 1. Buka aplikasi dan tap **"REGISTRASI"**
 2. Masukkan nama lengkap pengguna
-3. Ambil 3 foto wajah sesuai instruksi:
-    - **Foto Depan**: Wajah menghadap langsung ke kamera
-    - **Foto Kiri**: Kepala menghadap ke kiri (profile kiri)
-    - **Foto Kanan**: Kepala menghadap ke kanan (profile kanan)
+3. Untuk setiap foto (Depan, Kiri, Kanan):
+   - Tap **"Tambah [Jenis Foto]"**
+   - Pilih sumber foto:
+      - **Kamera**: Mengambil foto langsung dengan panduan wajah
+      - **Galeri**: Memilih foto yang sudah ada
+4. Pastikan wajah terlihat jelas dalam setiap foto
+5. Tap **"SIMPAN REGISTRASI"** setelah semua foto lengkap
+
+### 2. Absensi Harian
+
+1. Dari halaman utama, tap **"ABSENSI HARIAN"**
+2. Tap **"AMBIL FOTO"** untuk memilih sumber foto
+3. Pilih **Kamera** atau **Galeri**:
+   - **Kamera**: Ambil foto langsung dengan frame guide
+   - **Galeri**: Pilih foto dari galeri perangkat
+4. Tap **"PROSES ABSENSI"** untuk menjalankan face recognition
+5. Sistem akan menampilkan hasil:
+   - ✅ **Berhasil**: Jika wajah dikenali dan absensi tercatat
+   - ❌ **Gagal**: Jika wajah tidak ditemukan dalam databaseiri)
+   - **Foto Kanan**: Kepala menghadap ke kanan (profile kanan)
 4. Pastikan wajah berada dalam frame guide dan pencahayaan cukup
 5. Tap **"SIMPAN REGISTRASI"** untuk menyimpan data
 
@@ -113,8 +130,8 @@ Tambahkan ke `ios/Runner/Info.plist`:
 4. Tap tombol capture (lingkaran biru besar)
 5. Tap **"PROSES ABSENSI"** untuk menjalankan face recognition
 6. Sistem akan menampilkan hasil:
-    - ✅ **Berhasil**: Jika wajah dikenali dan absensi tercatat
-    - ❌ **Gagal**: Jika wajah tidak ditemukan dalam database
+   - ✅ **Berhasil**: Jika wajah dikenali dan absensi tercatat
+   - ❌ **Gagal**: Jika wajah tidak ditemukan dalam database
 
 ### 3. Melihat Daftar Pengguna
 
@@ -130,9 +147,9 @@ Edit nilai threshold di `face_recognition_service.dart`:
 
 ```dart
 bool isSamePerson(List<double> embedding1, List<double> embedding2, {double threshold = 0.7}) {
-  // Nilai default: 0.7
-  // Lebih rendah = lebih permissive (mudah match)
-  // Lebih tinggi = lebih strict (sulit match)
+   // Nilai default: 0.7
+   // Lebih rendah = lebih permissive (mudah match)
+   // Lebih tinggi = lebih strict (sulit match)
 }
 ```
 
@@ -150,14 +167,14 @@ Konfigurasi Google ML Kit Face Detection:
 
 ```dart
 FaceDetector(
-  options: FaceDetectorOptions(
-    enableContours: false,
-    enableClassification: false,
-    enableLandmarks: false,
-    enableTracking: false,
-    minFaceSize: 0.1,  // Minimum 10% dari image size
-    performanceMode: FaceDetectorMode.accurate,
-  ),
+options: FaceDetectorOptions(
+enableContours: false,
+enableClassification: false,
+enableLandmarks: false,
+enableTracking: false,
+minFaceSize: 0.1,  // Minimum 10% dari image size
+performanceMode: FaceDetectorMode.accurate,
+),
 );
 ```
 
@@ -249,7 +266,7 @@ minSdkVersion 21
 Edit `registration_screen.dart`:
 
 ```dart
-List<String> imageLabels = ['Foto Depan', 'Foto Kiri', 'Foto Kanan']; 
+List<String> imageLabels = ['Foto Depan', 'Foto Kiri', 'Foto Kanan'];
 // Tambah/kurangi sesuai kebutuhan
 ```
 
@@ -259,8 +276,8 @@ Edit `main.dart`:
 
 ```dart
 theme: ThemeData(
-  primarySwatch: Colors.blue, // Ganti warna primary
-  // Tambah kustomisasi lainnya
+primarySwatch: Colors.blue, // Ganti warna primary
+// Tambah kustomisasi lainnya
 ),
 ```
 
@@ -272,7 +289,7 @@ Tambah validasi di `attendance_screen.dart`:
 // Contoh: Cek jam kerja
 final now = DateTime.now();
 if (now.hour < 8 || now.hour > 17) {
-  // Show error: diluar jam kerja
+// Show error: diluar jam kerja
 }
 ```
 

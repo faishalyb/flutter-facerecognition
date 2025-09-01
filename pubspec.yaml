@@ -12,13 +12,15 @@ environment:
 dependencies:
   flutter:
     sdk: flutter
+
   # Face Recognition & ML
   google_mlkit_face_detection: ^0.10.0
   tflite_flutter: ^0.11.0
 
-  # Camera
+  # Camera & Image Picker
   camera: ^0.10.5+9
   image: ^4.0.17
+  image_picker: ^1.0.4
 
   # Storage
   hive: ^2.2.3
@@ -38,4 +40,4 @@ dev_dependencies:
 flutter:
   uses-material-design: true
   assets:
-    - lib/assets/models/output_model.tflite
+    - lib/assets/models/
