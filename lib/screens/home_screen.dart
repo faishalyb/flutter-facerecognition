@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:hive_flutter/hive_flutter.dart';
+import 'package:presensi/screens/anti_spoof_attendance_screen.dart';
 import '../models/user_model.dart';
 import 'registration_screen.dart';
-import 'attendance_screen.dart';
 
 class HomeScreen extends StatelessWidget {
   @override
@@ -80,7 +80,9 @@ class HomeScreen extends StatelessWidget {
               onPressed: () {
                 Navigator.push(
                   context,
-                  MaterialPageRoute(builder: (context) => AttendanceScreen()),
+                  MaterialPageRoute(
+                      builder: (context) =>
+                          const FastAntiSpoofAttendanceScreen()),
                 );
               },
               icon: Icon(Icons.camera_alt),
@@ -196,7 +198,8 @@ class HomeScreen extends StatelessWidget {
                             ],
                           ),
                           trailing: Container(
-                            padding: EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                            padding: EdgeInsets.symmetric(
+                                horizontal: 8, vertical: 4),
                             decoration: BoxDecoration(
                               color: hasAttendanceToday
                                   ? Colors.green[100]

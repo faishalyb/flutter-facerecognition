@@ -1,7 +1,7 @@
 plugins {
     id("com.android.application")
     id("kotlin-android")
-    // The Flutter Gradle Plugin must be applied after the Android and Kotlin Gradle plugins.
+    // Flutter Gradle Plugin harus setelah Android & Kotlin
     id("dev.flutter.flutter-gradle-plugin")
 }
 
@@ -10,33 +10,50 @@ android {
     compileSdk = flutter.compileSdkVersion
     ndkVersion = flutter.ndkVersion
 
-    compileOptions {
-        sourceCompatibility = JavaVersion.VERSION_11
-        targetCompatibility = JavaVersion.VERSION_11
-    }
-
-    kotlinOptions {
-        jvmTarget = JavaVersion.VERSION_11.toString()
+    androidResources {
+        // Biar model .tflite tidak dikompres (lebih aman untuk load)
+        noCompress += "tflite"
     }
 
     defaultConfig {
-        // TODO: Specify your own unique Application ID (https://developer.android.com/studio/build/application-id.html).
         applicationId = "com.lkt.presence.presensi"
-        // You can update the following values to match your application needs.
-        // For more information, see: https://flutter.dev/to/review-gradle-config.
         minSdk = flutter.minSdkVersion
         targetSdk = flutter.targetSdkVersion
         versionCode = flutter.versionCode
         versionName = flutter.versionName
     }
 
-    buildTypes {
-        release {
-            // TODO: Add your own signing config for the release build.
-            // Signing with the debug keys for now, so `flutter run --release` works.
-            signingConfig = signingConfigs.getByName("debug")
-        }
+    compileOptions {
+        sourceCompatibility = JavaVersion.VERSION_11
+        targetCompatibility = JavaVersion.VERSION_11
     }
+
+    kotlinOptions {
+        jvmTarget = "11"
+    }
+
+    buildTypes {
+    release {
+        signingConfig = signingConfigs.getByName("debug")
+        isMinifyEnabled = true
+        isShrinkResources = true
+        proguardFiles(
+            getDefaultProguardFile("proguard-android-optimize.txt"),
+            "proguard-rules.pro")
+        }    
+    }
+
+}
+
+dependencies {
+    // ✅ Wajib untuk Kotlin native spoof detector (org.tensorflow.lite.Interpreter)
+    implementation("org.tensorflow:tensorflow-lite:2.14.0")
+
+    // Optional (aman kalau suatu saat butuh helper ops)
+    // implementation("org.tensorflow:tensorflow-lite-support:0.4.4")
+
+    // Optional GPU (tidak wajib untuk spoof)
+    implementation("org.tensorflow:tensorflow-lite-gpu:2.14.0")
 }
 
 flutter {

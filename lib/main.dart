@@ -1,9 +1,10 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:hive_flutter/hive_flutter.dart';
 import 'package:camera/camera.dart';
+import 'package:presensi/services/face_recognition_service.dart';
 import 'models/user_model.dart';
 import 'screens/home_screen.dart';
-import 'services/face_recognition_service.dart';
 
 List<CameraDescription> cameras = [];
 late FaceRecognitionService faceRecognitionService;
@@ -22,6 +23,13 @@ Future<void> main() async {
   // Initialize Face Recognition Service
   faceRecognitionService = FaceRecognitionService();
   await faceRecognitionService.loadModel();
+
+  final b1 = await rootBundle
+      .load('android/app/src/main/assets/models/spoof_model_scale_2_7.tflite');
+  final b2 = await rootBundle
+      .load('android/app/src/main/assets/models/spoof_model_scale_4_0.tflite');
+  print('scale_2_7 bytes: ${b1.lengthInBytes}');
+  print('scale_4_0 bytes: ${b2.lengthInBytes}');
 
   runApp(MyApp());
 }
