@@ -36,7 +36,10 @@ class MainActivity : FlutterActivity() {
                                         mapOf(
                                             "isSpoof" to r.isSpoof,
                                             "score" to r.score.toDouble(),
-                                            "timeMillis" to r.timeMillis
+                                            "timeMillis" to r.timeMillis,
+                                            "moireScore" to r.moireScore.toDouble(),
+                                            "textureScore" to r.textureScore.toDouble(),
+                                            "detailMsg" to r.detailMsg
                                         )
                                     )
                                 }

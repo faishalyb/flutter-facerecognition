@@ -50,7 +50,7 @@ dependencies {
     implementation("org.tensorflow:tensorflow-lite:2.14.0")
 
     // Optional (aman kalau suatu saat butuh helper ops)
-    // implementation("org.tensorflow:tensorflow-lite-support:0.4.4")
+    implementation("org.tensorflow:tensorflow-lite-support:0.4.4")
 
     // Optional GPU (tidak wajib untuk spoof)
     implementation("org.tensorflow:tensorflow-lite-gpu:2.14.0")

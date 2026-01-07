@@ -3,7 +3,6 @@
 import 'dart:async';
 import 'dart:io';
 import 'dart:math';
-import 'dart:typed_data';
 import 'dart:ui' as ui;
 
 import 'package:camera/camera.dart';
@@ -37,11 +36,10 @@ class _FastAntiSpoofAttendanceScreenState
   bool _isProcessing = false;
   String? _error;
 
-  CameraLensDirection _preferredLens = CameraLensDirection.front;
+  CameraLensDirection _preferredLens = CameraLensDirection.back;
 
-  // SPEED OPTIMIZATION: Throttle lebih agresif
   DateTime _lastProcess = DateTime.fromMillisecondsSinceEpoch(0);
-  static const int _processEveryMs = 150; // dari 200ms → 150ms
+  static const int _processEveryMs = 150;
 
   int _frameRotation = 90;
   String _status = 'Posisikan wajah Anda';
@@ -49,21 +47,18 @@ class _FastAntiSpoofAttendanceScreenState
   bool showResult = false;
   UserModel? recognizedUser;
 
-  // SPEED OPTIMIZATION: Waktu tunggu lebih singkat
   DateTime? _faceStableStart;
-  static const int _stableTimeMs = 800; // dari 2000ms → 800ms (0.8 detik)
+  static const int _stableTimeMs = 800;
 
   final SpoofNativeService _spoofNative = SpoofNativeService();
   bool _nativeSpoofReady = true;
   String? _nativeSpoofError;
 
-  // SPEED OPTIMIZATION: Deteksi stabilitas lebih cepat
   ui.Rect? _lastFaceRect;
   int _stableFrameCount = 0;
-  static const int _minStableFrames = 4; // dari 8 → 4 frame
-  static const double _movementThreshold = 20.0; // dari 15 → 20 (lebih toleran)
+  static const int _minStableFrames = 4;
+  static const double _movementThreshold = 20.0;
 
-  // SPEED OPTIMIZATION: Cache user embeddings di memory
   List<_UserEmbedding>? _cachedUsers;
 
   @override
@@ -71,23 +66,21 @@ class _FastAntiSpoofAttendanceScreenState
     super.initState();
     WidgetsBinding.instance.addObserver(this);
 
-    // SPEED: Fast mode face detector
     _faceDetector = FaceDetector(
       options: FaceDetectorOptions(
-        performanceMode: FaceDetectorMode.fast, // accurate → fast
+        performanceMode: FaceDetectorMode.fast,
         enableContours: false,
         enableLandmarks: false,
         enableTracking: false,
         enableClassification: false,
-        minFaceSize: 0.12, // dari 0.15 → 0.12 (lebih toleran)
+        minFaceSize: 0.12,
       ),
     );
 
     _initializeCamera();
-    _preloadUserEmbeddings(); // SPEED: Load embeddings sekali di awal
+    _preloadUserEmbeddings();
   }
 
-  // SPEED OPTIMIZATION: Cache embeddings untuk menghindari loop berulang
   void _preloadUserEmbeddings() {
     try {
       final userBox = Hive.box<UserModel>('users');
@@ -144,7 +137,7 @@ class _FastAntiSpoofAttendanceScreenState
 
       final controller = CameraController(
         selected,
-        ResolutionPreset.high, // SPEED: medium → low
+        ResolutionPreset.max,
         enableAudio: false,
         imageFormatGroup: ImageFormatGroup.yuv420,
       );
@@ -239,7 +232,6 @@ class _FastAntiSpoofAttendanceScreenState
               final elapsed = now.difference(_faceStableStart!).inMilliseconds;
 
               if (elapsed >= _stableTimeMs) {
-                // SPEED: Langsung capture tanpa countdown detail
                 await _captureAndProcess();
               } else {
                 _setStatus('⏳ Tahan...');
@@ -298,7 +290,7 @@ class _FastAntiSpoofAttendanceScreenState
     final faceArea = max(0.0, bb.width) * max(0.0, bb.height);
     final frameArea = imgW.toDouble() * imgH.toDouble();
     final ratio = faceArea / frameArea;
-    return ratio >= 0.10; // dari 0.12 → 0.10
+    return ratio >= 0.10;
   }
 
   InputImage _cameraImageToInputImage(CameraImage image) {
@@ -355,7 +347,6 @@ class _FastAntiSpoofAttendanceScreenState
       final XFile photo = await c.takePicture();
       await File(photo.path).copy(filePath);
 
-      // SPEED: Deteksi wajah hanya sekali, pakai hasil dari stream sebelumnya
       final stillFaces =
           await _faceDetector.processImage(InputImage.fromFilePath(filePath));
 
@@ -369,7 +360,7 @@ class _FastAntiSpoofAttendanceScreenState
       final face = stillFaces.first;
       final faceRect = face.boundingBox;
 
-      // === Native Spoof Check ===
+      // === Enhanced Native Spoof Check ===
       try {
         final spoofRes = await _spoofNative.detectSpoof(
           imagePath: filePath,
@@ -381,12 +372,18 @@ class _FastAntiSpoofAttendanceScreenState
           _nativeSpoofError = null;
         });
 
+        if (kDebugMode) {
+          print('🔍 Spoof Check: ${spoofRes.detailMsg}');
+        }
+
         if (spoofRes.isSpoof) {
           await _showSpoofAlert(
-            'Spoof terdeteksi!\n'
-            'Score: ${spoofRes.score.toStringAsFixed(2)}',
+            'Spoof terdeteksi!\n\n'
+            '${spoofRes.detailMsg}\n\n'
+            'Gunakan wajah asli untuk absen.',
           );
-          return;
+          // ignore: use_build_context_synchronously
+          return Navigator.pop(context);
         }
       } catch (e) {
         setState(() {
@@ -396,7 +393,7 @@ class _FastAntiSpoofAttendanceScreenState
         throw Exception('Anti-spoof error: $e');
       }
 
-      // === Face Recognition ===
+      // === Enhanced Face Recognition ===
       final embedding = await _extractFaceNetEmbeddingFromFile(
         filePath,
         faceRect: faceRect,
@@ -406,60 +403,109 @@ class _FastAntiSpoofAttendanceScreenState
         throw Exception('Gagal membuat embedding');
       }
 
-      // SPEED: Gunakan cached embeddings
+      // ✅ FIXED: Improved matching algorithm
       UserModel? matchedUser;
       double bestSim = -1;
-      const threshold = 0.58; // Sedikit turun dari 0.60 untuk kecepatan
+      const threshold = 0.65; // ✅ Naikin threshold dari 0.58 ke 0.65
 
+      // ✅ NEW: Multi-embedding averaging untuk akurasi lebih tinggi
       if (_cachedUsers != null && _cachedUsers!.isNotEmpty) {
-        // SPEED: Loop dari cache, bukan dari Hive
+        // Group by user
+        final userScores = <String, List<double>>{};
+
         for (final cached in _cachedUsers!) {
           final sim = _cosineSimilarity(embedding, cached.embedding);
-          if (sim > bestSim) {
-            bestSim = sim;
-            matchedUser = (sim >= threshold) ? cached.user : null;
+
+          final userId = cached.user.name;
+          if (!userScores.containsKey(userId)) {
+            userScores[userId] = [];
+          }
+          userScores[userId]!.add(sim);
+        }
+
+        // ✅ Calculate average similarity per user
+        for (final entry in userScores.entries) {
+          final userId = entry.key;
+          final similarities = entry.value;
+
+          // Ambil top 3 similarity (jika ada multiple embeddings)
+          similarities.sort((a, b) => b.compareTo(a));
+          final topSimilarities = similarities.take(3).toList();
+          final avgSim =
+              topSimilarities.reduce((a, b) => a + b) / topSimilarities.length;
+
+          if (kDebugMode) {
+            final user =
+                _cachedUsers!.firstWhere((c) => c.user.name == userId).user;
+            print(
+                '📊 ${user.name}: avg=${avgSim.toStringAsFixed(3)} (top ${topSimilarities.length})');
+          }
+
+          if (avgSim > bestSim) {
+            bestSim = avgSim;
+            if (avgSim >= threshold) {
+              matchedUser =
+                  _cachedUsers!.firstWhere((c) => c.user.name == userId).user;
+            }
           }
         }
       } else {
         // Fallback ke Hive jika cache gagal
         final userBox = Hive.box<UserModel>('users');
         for (final user in userBox.values) {
+          final similarities = <double>[];
+
           for (final ue in user.faceEmbeddings) {
             final sim = _cosineSimilarity(embedding, ue);
-            if (sim > bestSim) {
-              bestSim = sim;
-              matchedUser = (sim >= threshold) ? user : null;
+            similarities.add(sim);
+          }
+
+          if (similarities.isNotEmpty) {
+            similarities.sort((a, b) => b.compareTo(a));
+            final topSimilarities = similarities.take(3).toList();
+            final avgSim = topSimilarities.reduce((a, b) => a + b) /
+                topSimilarities.length;
+
+            if (avgSim > bestSim) {
+              bestSim = avgSim;
+              matchedUser = (avgSim >= threshold) ? user : null;
             }
           }
         }
       }
 
+      if (kDebugMode) {
+        print(
+            '🎯 Best match: ${matchedUser?.name ?? "Unknown"} (${bestSim.toStringAsFixed(3)})');
+      }
+
       setState(() {
         recognizedUser = matchedUser;
         showResult = true;
-        _status =
-            matchedUser != null ? '✅ ${matchedUser.name}' : '❌ Tidak dikenali';
+        _status = matchedUser != null
+            ? '✅ ${matchedUser.name} ' // kalau mau pake persen (${(bestSim * 100).toStringAsFixed(1)}%)
+            : '❌ Tidak dikenali'; // kalau mau pake persen (${(bestSim * 100).toStringAsFixed(1)}%)f
       });
 
       if (matchedUser != null) {
         matchedUser.addAttendance();
         if (!mounted) return;
 
-        // SPEED: SnackBar lebih singkat
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('✅ ${matchedUser.name}'),
+            content: Text('✅ ${matchedUser.name} berhasil absen!'),
             backgroundColor: Colors.green,
-            duration: const Duration(milliseconds: 1500), // dari 2s → 1.5s
+            duration: const Duration(milliseconds: 2000),
           ),
         );
       } else {
         if (!mounted) return;
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('❌ Tidak dikenali'),
+            content: Text(
+                '❌ Wajah tidak dikenali (similarity: ${(bestSim * 100).toStringAsFixed(1)}%)'),
             backgroundColor: Colors.red,
-            duration: const Duration(milliseconds: 1500),
+            duration: const Duration(milliseconds: 2000),
           ),
         );
       }
@@ -474,16 +520,14 @@ class _FastAntiSpoofAttendanceScreenState
         SnackBar(
           content: Text('Error: $e'),
           backgroundColor: Colors.red,
-          duration: const Duration(milliseconds: 1500),
+          duration: const Duration(milliseconds: 2000),
         ),
       );
     } finally {
       if (!mounted) return;
       setState(() => _isProcessing = false);
 
-      // SPEED: Auto restart lebih cepat
-      Future.delayed(const Duration(milliseconds: 1500), () {
-        // dari 3s → 1.5s
+      Future.delayed(const Duration(milliseconds: 2000), () {
         if (mounted) {
           setState(() {
             showResult = false;
@@ -511,7 +555,9 @@ class _FastAntiSpoofAttendanceScreenState
             Text('SPOOFING ALERT', style: TextStyle(fontSize: 18)),
           ],
         ),
-        content: Text(message),
+        content: SingleChildScrollView(
+          child: Text(message, style: TextStyle(fontSize: 13)),
+        ),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context),
@@ -541,9 +587,9 @@ class _FastAntiSpoofAttendanceScreenState
       final decoded = img.decodeImage(bytes);
       if (decoded == null) return null;
 
-      // SPEED: Margin lebih kecil
-      final marginX = (faceRect.width * 0.15).round(); // dari 0.20 → 0.15
-      final marginY = (faceRect.height * 0.15).round();
+      // ✅ FIXED: Margin yang konsisten dengan registration
+      final marginX = (faceRect.width * 0.25).round(); // 0.15 → 0.25
+      final marginY = (faceRect.height * 0.25).round();
 
       int left = (faceRect.left.round() - marginX).clamp(0, decoded.width - 1);
       int top = (faceRect.top.round() - marginY).clamp(0, decoded.height - 1);
@@ -553,11 +599,12 @@ class _FastAntiSpoofAttendanceScreenState
       final w = max(1, right - left);
       final h = max(1, bottom - top);
 
-      if (w < 50 || h < 50) return null; // dari 60 → 50
+      if (w < 50 || h < 50) return null;
 
       final cropped =
           img.copyCrop(decoded, x: left, y: top, width: w, height: h);
 
+      // ✅ Service sekarang sudah handle pre-processing + normalization
       final emb =
           await faceRecognitionService.extractEmbeddingFromImage(cropped);
       return emb;
@@ -579,14 +626,6 @@ class _FastAntiSpoofAttendanceScreenState
     return dot / denom;
   }
 
-  List<double> _l2Normalize(List<double> v) {
-    double sum = 0.0;
-    for (final x in v) sum += x * x;
-    final norm = sqrt(sum);
-    if (norm == 0.0) return v;
-    return v.map((x) => x / norm).toList();
-  }
-
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -604,10 +643,9 @@ class _FastAntiSpoofAttendanceScreenState
         ],
       ),
       body: Padding(
-        padding: const EdgeInsets.all(12), // dari 16 → 12
+        padding: const EdgeInsets.all(12),
         child: Column(
           children: [
-            // SPEED: Info lebih ringkas
             Container(
               padding: const EdgeInsets.all(10),
               decoration: BoxDecoration(
@@ -625,7 +663,7 @@ class _FastAntiSpoofAttendanceScreenState
                   ),
                   const SizedBox(width: 6),
                   Text(
-                    'Mode Cepat • ${_cachedUsers?.length ?? 0} pengguna',
+                    'Mode Enhanced • ${_cachedUsers?.length ?? 0} pengguna',
                     style: TextStyle(
                       fontSize: 12,
                       color: Colors.blue[900],
@@ -635,18 +673,14 @@ class _FastAntiSpoofAttendanceScreenState
                 ],
               ),
             ),
-
             const SizedBox(height: 10),
-
             Expanded(
               child: ClipRRect(
                 borderRadius: BorderRadius.circular(10),
                 child: _buildPreview(),
               ),
             ),
-
             const SizedBox(height: 10),
-
             Container(
               width: double.infinity,
               padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 14),
@@ -664,7 +698,6 @@ class _FastAntiSpoofAttendanceScreenState
                 ),
               ),
             ),
-
             if (showResult) ...[
               const SizedBox(height: 10),
               Container(
@@ -745,8 +778,8 @@ class _FastAntiSpoofAttendanceScreenState
         CameraPreview(_controller!),
         Center(
           child: Container(
-            width: 200, // dari 240 → 200
-            height: 260, // dari 300 → 260
+            width: 200,
+            height: 260,
             decoration: BoxDecoration(
               border:
                   Border.all(color: Colors.white.withOpacity(0.8), width: 2),
@@ -759,7 +792,6 @@ class _FastAntiSpoofAttendanceScreenState
   }
 }
 
-// SPEED OPTIMIZATION: Helper class untuk cache embeddings
 class _UserEmbedding {
   final UserModel user;
   final List<double> embedding;
