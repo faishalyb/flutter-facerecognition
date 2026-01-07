@@ -1,4 +1,4 @@
-// ignore_for_file: unused_field
+// ignore_for_file: unused_field, deprecated_member_use
 
 import 'dart:async';
 import 'dart:io';
@@ -44,8 +44,8 @@ class _SimpleLiveCameraScreenState extends State<SimpleLiveCameraScreen>
   int _frameRotation = 0;
   CameraDescription? _selectedCamera;
 
-  // ✅ tambahan: lensa yang aktif (default: front)
-  CameraLensDirection _currentLens = CameraLensDirection.front;
+  // ✅ tambahan: lensa yang aktif (default: back)
+  CameraLensDirection _currentLens = CameraLensDirection.back;
 
   @override
   void initState() {
@@ -124,7 +124,7 @@ class _SimpleLiveCameraScreenState extends State<SimpleLiveCameraScreen>
 
       final controller = CameraController(
         nextCam,
-        ResolutionPreset.medium,
+        ResolutionPreset.max,
         enableAudio: false,
         imageFormatGroup: ImageFormatGroup.yuv420,
       );
